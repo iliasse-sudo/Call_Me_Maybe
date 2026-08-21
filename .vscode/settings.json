@@ -1,0 +1,4 @@
+{
+    "editor.fontSize": 26,
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+}

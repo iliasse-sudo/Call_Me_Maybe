@@ -1,0 +1,9 @@
+torch>=2.0.0
+transformers>=4.40.0
+huggingface-hub>=0.20.0
+numpy>=2.2.6
+pydantic>=2.13.4
+regex>=2026.7.19
+flake8>=7.3.0
+mypy>=2.3.1
+types-regex>=2026.7.19.20260720
