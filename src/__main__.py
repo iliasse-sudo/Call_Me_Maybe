@@ -8,7 +8,8 @@
 from llm_sdk import Small_LLM_Model
 from pathlib import Path
 from tokenizer import Tokenizer
-from time import perf_counter
+import json
+# from time import perf_counter
 
 model = Small_LLM_Model()
 
@@ -50,7 +51,7 @@ tokenizer = Tokenizer(tokenizer_file)
 functions_def_file = "data/input/functions_definition.json"
 prompts_file = "data/input/function_calling_tests.json"
 
-import json
+
 with open(functions_def_file) as f:
     functions_defs = json.dumps(json.load(f))
 with open(prompts_file) as f:
@@ -90,10 +91,12 @@ Output:
 {{"prompt": "What is the sum of 2 and 3?", "name": "fn_add_numbers", "parameters": {{"a": 2.0, "b": 3.0}}}}
 """
 
-input_ids = tokenizer.encode(prompt_text)
+input_ids = model.encode(
+    prompt_text
+)  # for quick testing only, use tokenizer.encode(prompt_text) after
 
 # Generate tokens one at a time
-generated = input_ids
+generated = input_ids[0].tolist()
 
 while True:
     try:
