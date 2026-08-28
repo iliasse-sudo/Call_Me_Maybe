@@ -5,6 +5,8 @@ from .fn_object import FN_OBJECT
 from .number_validator import NumberValidator
 from .string_validator import StringValidator
 from .boolean_validator import BooleanValidator
+from .prompt_builder import PromptBuilder
+from .prompt_object import PROMPT_OBJECT
 
 
 class ConstrainedDecoder:
@@ -65,36 +67,43 @@ class ConstrainedDecoder:
     def decode(
         self,
         model: Any,
-        prompt_text: str,
+        prompt_builder: PromptBuilder,
+        prompt_obj: PROMPT_OBJECT,
         logits_fn: Callable,
     ) -> str:
+        prompt_text = prompt_builder.build(prompt_obj.prompt)
+        context: List[int] = self._tokenizer.encode(prompt_text)
+
+        context.extend(self.write('{"prompt": '))
+        context.extend(self.write(f'"{prompt_obj.prompt}"'))
+        context.extend(self.write(', "name": "'))
+
         generated: List[int] = []
-
-        self.write('{"prompt": ')
-        self.write(f'"{prompt_text}"')
-        self.write(', "name": "')
-
         while True:
-            logits = logits_fn(generated)
+            logits = logits_fn(context + generated)
             token_id = self.predict(
                 logits, self._fn_name_validator, generated
             )
             generated.append(token_id)
-            decoded = self._tokenizer.decode(token_id)
-            print(decoded, end="", flush=True)
+            print(
+                self._tokenizer.decode(token_id),
+                end="", flush=True,
+            )
             if not self._fn_name_validator.get_valid_next_tokens(
                 generated
             ):
                 break
 
+        context.extend(generated)
+
         fn_name = self._tokenizer.decode(generated)
         fn_obj = self._function_defs[fn_name]
 
-        self.write('", "parameters": {')
+        context.extend(self.write('", "parameters": {'))
 
         params = list(fn_obj.parameters.items())
         for i, (key, spec) in enumerate(params):
-            self.write(f'"{key}": ')
+            context.extend(self.write(f'"{key}": '))
 
             param_type = spec.get("type", "string")
             validator: Any
@@ -108,7 +117,7 @@ class ConstrainedDecoder:
 
             value_tokens: List[int] = []
             while True:
-                logits = logits_fn(generated + value_tokens)
+                logits = logits_fn(context + value_tokens)
                 token_id = self.predict(
                     logits, validator, value_tokens
                 )
@@ -120,8 +129,10 @@ class ConstrainedDecoder:
                     end="", flush=True,
                 )
 
+            context.extend(value_tokens)
+
             if i < len(params) - 1:
-                self.write(", ")
+                context.extend(self.write(", "))
 
         self.write("}}")
         return ""

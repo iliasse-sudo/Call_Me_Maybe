@@ -41,11 +41,14 @@ class JsonParser:
                 )
 
             returns = entry.get("returns")
-            if (
-                not isinstance(returns, dict)
-                or "type" not in returns
-                or not isinstance(returns["type"], str)
-            ):
+            if not isinstance(returns, dict):
+                raise ValueError(
+                    f"{filename}[{i}]: missing or "
+                    f"invalid field 'returns.type'"
+                )
+            elif ("type" not in returns
+                  or not isinstance(returns.get("type"), str)
+                  ):
                 raise ValueError(
                     f"{filename}[{i}]: missing or "
                     f"invalid field 'returns.type'"

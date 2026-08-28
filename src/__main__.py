@@ -113,7 +113,7 @@ while True:
             print()
             print()
             prompt = input("prompt: ")
-            input_ids = tokenizer.encode(prompt)
-            generated = input_ids
+            input_ids = model.encode(prompt) # for quick testing only, use tokenizer.encode(prompt_text) after
+            generated = input_ids[0].tolist()
         except KeyboardInterrupt:
             exit()
