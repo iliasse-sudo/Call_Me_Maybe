@@ -26,7 +26,9 @@ class ConstrainedDecoder:
     _boolean_validator: BooleanValidator
     _function_defs: Dict[str, FN_OBJECT]
 
-    def __init__(self, tokenizer: SelectableTokenizer, definitions_path: str) -> None:
+    def __init__(
+        self, tokenizer: SelectableTokenizer, definitions_path: str
+    ) -> None:
         """Initializes the constrained decoder.
 
         Args:
@@ -47,11 +49,13 @@ class ConstrainedDecoder:
     def get_masked_logits(
         self, logits: List[float], allowed_tokens: List[int]
     ) -> List[float]:
-        """Masks out disallowed tokens by setting their logits to negative infinity.
+        """Masks out disallowed tokens by setting their logits to negative
+        infinity.
 
         Args:
             logits (List[float]): The original model logits.
-            allowed_tokens (List[int]): The list of token IDs that are permitted.
+            allowed_tokens (List[int]): The list of token IDs that are
+                permitted.
 
         Returns:
             List[float]: The masked logits.
@@ -81,12 +85,14 @@ class ConstrainedDecoder:
         validator: Any,
         token_ids: List[int],
     ) -> int:
-        """Selects the best valid token based on the provided validator and logits.
+        """Selects the best valid token based on the provided validator and
+        logits.
 
         Args:
             logits (List[float]): The raw logits from the model.
             validator (Any): The stateful validator instance to use.
-            token_ids (List[int]): The currently generated sequence of token IDs.
+            token_ids (List[int]): The currently generated sequence of token
+                IDs.
 
         Returns:
             int: The ID of the highest probability valid token.
@@ -94,7 +100,9 @@ class ConstrainedDecoder:
         if hasattr(validator, "get_valid_next_tokens"):
             allowed = validator.get_valid_next_tokens(token_ids)
         else:
-            allowed = [i for i in range(len(logits)) if validator.is_valid_next(i)]
+            allowed = [
+                i for i in range(len(logits)) if validator.is_valid_next(i)
+            ]
         masked = self.get_masked_logits(logits, allowed)
         return max(range(len(masked)), key=lambda i: masked[i])
 
@@ -107,9 +115,11 @@ class ConstrainedDecoder:
         """Decodes a single prompt into a structured function call.
 
         Args:
-            prompt_builder (PromptBuilder): The builder for formatting the prompt.
+            prompt_builder (PromptBuilder): The builder for formatting the
+                prompt.
             prompt_obj (PROMPT_OBJECT): The target natural language prompt.
-            logits_fn (Callable[[List[int]], List[float]]): Function yielding logits.
+            logits_fn (Callable[[List[int]], List[float]]): Function yielding
+                logits.
 
         Returns:
             ModelAnswer: The resulting decoded function name and parameters.

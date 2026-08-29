@@ -19,7 +19,8 @@ class JsonParser:
             Set[FN_OBJECT]: A set of parsed function objects.
 
         Raises:
-            ValueError: If the JSON is invalid, missing required fields, or has duplicate function names.
+            ValueError: If the JSON is invalid, missing required fields,
+                or has duplicate function names.
         """
         data = JsonParser._load_json(filename)
 
@@ -31,28 +32,39 @@ class JsonParser:
         for i, entry in enumerate(data):
             got = type(entry).__name__
             if not isinstance(entry, dict):
-                raise ValueError(f"{filename}[{i}]: expected object, got {got}")
+                raise ValueError(
+                    f"{filename}[{i}]: expected object, got {got}"
+                )
 
             for field in ("name", "description"):
                 if field not in entry:
-                    raise ValueError(f"{filename}[{i}]: missing field '{field}'")
+                    raise ValueError(
+                        f"{filename}[{i}]: missing field '{field}'"
+                    )
                 if not isinstance(entry[field], str):
-                    raise ValueError(f"{filename}[{i}]: '{field}' must be a string")
+                    raise ValueError(
+                        f"{filename}[{i}]: '{field}' must be a string"
+                    )
 
             params = entry.get("parameters")
             if not isinstance(params, dict):
                 raise ValueError(
-                    f"{filename}[{i}]: missing or " f"invalid field 'parameters'"
+                    f"{filename}[{i}]: missing or "
+                    f"invalid field 'parameters'"
                 )
 
             returns = entry.get("returns")
             if not isinstance(returns, dict):
                 raise ValueError(
-                    f"{filename}[{i}]: missing or " f"invalid field 'returns.type'"
+                    f"{filename}[{i}]: missing or "
+                    f"invalid field 'returns.type'"
                 )
-            elif "type" not in returns or not isinstance(returns.get("type"), str):
+            elif "type" not in returns or not isinstance(
+                returns.get("type"), str
+            ):
                 raise ValueError(
-                    f"{filename}[{i}]: missing or " f"invalid field 'returns.type'"
+                    f"{filename}[{i}]: missing or "
+                    f"invalid field 'returns.type'"
                 )
 
             obj = FN_OBJECT(
@@ -64,7 +76,8 @@ class JsonParser:
 
             if obj in functions:
                 raise ValueError(
-                    f"{filename}[{i}]: duplicate " f"function name '{obj.name}'"
+                    f"{filename}[{i}]: duplicate "
+                    f"function name '{obj.name}'"
                 )
             functions.add(obj)
 
@@ -93,7 +106,9 @@ class JsonParser:
         for i, entry in enumerate(data):
             got = type(entry).__name__
             if not isinstance(entry, dict):
-                raise ValueError(f"{filename}[{i}]: expected object, got {got}")
+                raise ValueError(
+                    f"{filename}[{i}]: expected object, got {got}"
+                )
 
             if "prompt" not in entry:
                 raise ValueError(f"{filename}[{i}]: missing field 'prompt'")

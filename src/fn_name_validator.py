@@ -14,7 +14,9 @@ class FnNameValidator:
     functions: Set[Any]
     _trie: Dict[Any, Any]
 
-    def __init__(self, definitions_path: str, tokenizer: SelectableTokenizer) -> None:
+    def __init__(
+        self, definitions_path: str, tokenizer: SelectableTokenizer
+    ) -> None:
         """Initializes the FnNameValidator and builds the Trie.
 
         Args:
@@ -38,10 +40,12 @@ class FnNameValidator:
         """Retrieves the list of valid next tokens based on current context.
 
         Args:
-            token_ids (List[int]): The currently generated function name tokens.
+            token_ids (List[int]): The currently generated function name
+                tokens.
 
         Returns:
-            List[int]: A list of allowed next token IDs, optionally including the quote token.
+            List[int]: A list of allowed next token IDs, optionally including
+                the quote token.
         """
         node = self._trie
         for tid in token_ids:

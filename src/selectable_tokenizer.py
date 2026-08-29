@@ -8,7 +8,8 @@ class SelectableTokenizer:
     """A wrapper that allows selecting between custom and model tokenizers.
 
     Provides unified encode and decode methods, delegating to either the
-    custom tokenizer or the Hugging Face model tokenizer based on configuration.
+    custom tokenizer or the Hugging Face model tokenizer based on
+    configuration.
     """
 
     use_model_encode: bool
@@ -25,9 +26,12 @@ class SelectableTokenizer:
 
         Args:
             my_tokenizer (Tokenizer): The custom BPE tokenizer instance.
-            model (Small_LLM_Model): The LLM SDK model instance containing the HF tokenizer.
-            use_model_encode (bool, optional): If True, uses the model's encode method. Defaults to False.
-            use_model_decode (bool, optional): If True, uses the model's decode method. Defaults to False.
+            model (Small_LLM_Model): The LLM SDK model instance containing the
+                HF tokenizer.
+            use_model_encode (bool, optional): If True, uses the model's encode
+                method. Defaults to False.
+            use_model_decode (bool, optional): If True, uses the model's decode
+                method. Defaults to False.
         """
         self._my_tokenizer = my_tokenizer
         self._model = model

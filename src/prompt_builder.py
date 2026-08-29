@@ -11,7 +11,8 @@ class PromptBuilder:
         """Initializes the PromptBuilder with available functions.
 
         Args:
-            functions (Set[FN_OBJECT]): A set of available function definitions.
+            functions (Set[FN_OBJECT]): A set of available function
+                definitions.
         """
         defs: List[Dict[str, Any]] = []
         for fn in functions:

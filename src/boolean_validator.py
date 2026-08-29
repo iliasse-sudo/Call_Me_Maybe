@@ -68,7 +68,8 @@ class BooleanValidator:
             token_id (int): The candidate token ID.
 
         Returns:
-            bool: True if the state machine reached an end state, False otherwise.
+            bool: True if the state machine reached an end state,
+                False otherwise.
         """
         _ = token_id
         return self._state in self._END_STATES

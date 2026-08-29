@@ -60,7 +60,8 @@ def build_answer_json(
     """Rebuild the JSON representation of a generated answer."""
     function = functions_by_name[answer.name]
     parameters = {
-        key: value for key, value in zip(function.parameters, answer.parameters)
+        key: value
+        for key, value in zip(function.parameters, answer.parameters)
     }
     return {
         "prompt": answer.prompt,
@@ -111,17 +112,21 @@ def main() -> None:
         print()
         results.append(build_answer_json(answer, functions_by_name))
 
-    try:
-        output_path = Path(args.output)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(results, f, indent=2)
-            f.write("\n")
-    except OSError as exc:
-        print(f"Error: could not write output file: {exc}", file=sys.stderr)
-        sys.exit(1)
+        try:
+            output_path = Path(args.output)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(results, f, indent=2)
+                f.write("\n")
+        except OSError as exc:
+            print(
+                f"Error: could not write output file: {exc}", file=sys.stderr
+            )
+            sys.exit(1)
 
-    print(f"\nSuccessfully wrote {len(results)} result(s) to " f"{args.output}")
+    print(
+        f"\nSuccessfully wrote {len(results)} result(s) to " f"{args.output}"
+    )
 
 
 if __name__ == "__main__":
