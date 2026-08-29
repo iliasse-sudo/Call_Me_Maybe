@@ -2,17 +2,17 @@ from typing import Set, List
 from .selectable_tokenizer import SelectableTokenizer
 
 
-class NumberValidator:
-    """Validates tokens for numeric parameter generation.
+class IntegerValidator:
+    """Validates tokens for integer parameter generation.
 
-    Ensures that generated tokens form a valid floating point string.
+    Ensures that generated tokens form a valid integer string.
     """
 
     allowed_tokens: Set[int]
     end_tokens: Set[int]
 
     def __init__(self, tokenizer: SelectableTokenizer) -> None:
-        """Initializes the NumberValidator.
+        """Initializes the IntegerValidator.
 
         Args:
             tokenizer (Tokenizer): The tokenizer instance.
@@ -20,7 +20,7 @@ class NumberValidator:
         self._tokenizer = tokenizer
         self.allowed_tokens = set()
         self.end_tokens = set()
-        for ch in "0123456789-+.":
+        for ch in "0123456789-+":
             token_ids = tokenizer.encode(ch)
             self.allowed_tokens.update(token_ids)
         for ch in ",}":
@@ -67,7 +67,7 @@ class NumberValidator:
         return token_id in self.allowed_tokens
 
     def is_end(self, token_id: int) -> bool:
-        """Checks if a token signifies the end of the numeric value.
+        """Checks if a token signifies the end of the integer value.
 
         Args:
             token_id (int): The token ID to check.

@@ -1,119 +1,128 @@
-# from llm_sdk import Small_LLM_Model
+"""Entry point of the call-me-maybe function-calling pipeline.
 
-# model = Small_LLM_Model()
-
-# model.encode("What is the sum of 2 and 3?")
-
-
-from llm_sdk import Small_LLM_Model
-from pathlib import Path
-from tokenizer import Tokenizer
-import json
-# from time import perf_counter
-
-model = Small_LLM_Model()
-
-# vocab_file = Path(model.get_path_to_vocab_file())
-# merges_file = Path(model.get_path_to_merges_file())
-tokenizer_file = Path(model.get_path_to_tokenizer_file())
-
-# print(vocab_file)
-# print(merges_file)
-print(tokenizer_file)
-
-tokenizer = Tokenizer(tokenizer_file)
-# prompt = input("prompt: ")
-
-# normalized_text = tokenizer._normalize(prompt)
-# pre_tokenized_text = tokenizer._pre_tokenize(normalized_text)
-# t = perf_counter()
-# encoded = tokenizer.encode(prompt)
-# my_encode_time = perf_counter() - t
-# t = perf_counter()
-# model_encoded = model.encode(prompt)[0].tolist()
-# model_encode_time = perf_counter() - t
-# t = perf_counter()
-# decoded = tokenizer.decode(encoded)
-# my_decode_time = perf_counter() - t
-# t = perf_counter()
-# model_decoded = model.decode(model_encoded)
-# model_decode_time = perf_counter() - t
-
-# print(f"original text:      {repr(prompt)}")
-# print(f"normalized text:    {repr(normalized_text)}")
-# print(f"pre_tokenized_text: {pre_tokenized_text}")
-# print(f"my encoder:         {encoded} {my_encode_time:.5f}")
-# print(f"model encoder:      {model_encoded} {model_encode_time:.5f}")
-# print(f"my decoder:         {repr(decoded)} {my_decode_time:.5f}")
-# print(f"model decoder:      {repr(model_decoded)} {model_decode_time:.5f}")
-
-# exit()
-functions_def_file = "data/input/functions_definition.json"
-prompts_file = "data/input/function_calling_tests.json"
-
-
-with open(functions_def_file) as f:
-    functions_defs = json.dumps(json.load(f))
-with open(prompts_file) as f:
-    prompts = json.load(f)
-
-
-prompt_text = f"""
-You are a function-calling model.
-
-Here are the available function definitions:
-{functions_defs}
-
-For the following question:
-{prompts[4]['prompt']}
-
-Determine which function should be called and what parameters should be passed to it.
-
-Return ONLY a valid JSON object using EXACTLY this format:
-{{"prompt": "<the original question>", "name": "<exact function name>", "parameters": {{"<parameter_name>": <parameter_value>}}}}
-
-Rules:
-- "prompt" must contain the original question exactly.
-- "name" must be the exact name of one of the provided functions.
-- "parameters" must contain the function arguments using the exact parameter names from its definition.
-- Infer the parameter values from the question.
-- Do not calculate or return the result of the function.
-- Do not include any explanation or additional text.
-- Do not use Markdown or code fences.
-- Return exactly one JSON object nothing else.
-
-Example:
-
-Question:
-What is the sum of 2 and 3?
-
-Output:
-{{"prompt": "What is the sum of 2 and 3?", "name": "fn_add_numbers", "parameters": {{"a": 2.0, "b": 3.0}}}}
+Loads the Qwen3-0.6B model, runs constrained decoding over the list
+of prompts, and writes the resulting function calls to a JSON file.
 """
 
-input_ids = model.encode(
-    prompt_text
-)  # for quick testing only, use tokenizer.encode(prompt_text) after
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Dict, List
 
-# Generate tokens one at a time
-generated = input_ids[0].tolist()
+from llm_sdk import Small_LLM_Model
+from tokenizer import Tokenizer
 
-while True:
+from .constrained_decoder import ConstrainedDecoder
+from .fn_object import FN_OBJECT
+from .json_parser import JsonParser
+from .model_answer import ModelAnswer
+from .prompt_builder import PromptBuilder
+from .selectable_tokenizer import SelectableTokenizer
+
+DEFAULT_FUNCTIONS_DEF_FILE = "data/input/functions_definition.json"
+DEFAULT_INPUT_FILE = "data/input/function_calling_tests.json"
+DEFAULT_OUTPUT_FILE = "data/output/function_calling_results.json"
+
+
+def parse_args(argv: List[str]) -> argparse.Namespace:
+    """Parse command-line arguments for the program."""
+    parser = argparse.ArgumentParser(
+        prog="python -m src",
+        description="Translate natural-language prompts into function "
+        "calls using a constrained LLM decoder.",
+    )
+    parser.add_argument(
+        "--functions_definition",
+        default=DEFAULT_FUNCTIONS_DEF_FILE,
+        help="Path to the JSON file describing available functions "
+        f"(default: {DEFAULT_FUNCTIONS_DEF_FILE}).",
+    )
+    parser.add_argument(
+        "--input",
+        default=DEFAULT_INPUT_FILE,
+        help="Path to the JSON file containing the prompts "
+        f"(default: {DEFAULT_INPUT_FILE}).",
+    )
+    parser.add_argument(
+        "--output",
+        default=DEFAULT_OUTPUT_FILE,
+        help="Path to the JSON file where results are written "
+        f"(default: {DEFAULT_OUTPUT_FILE}).",
+    )
+    return parser.parse_args(argv)
+
+
+def build_answer_json(
+    answer: ModelAnswer,
+    functions_by_name: Dict[str, FN_OBJECT],
+) -> Dict[str, object]:
+    """Rebuild the JSON representation of a generated answer."""
+    function = functions_by_name[answer.name]
+    parameters = {
+        key: value for key, value in zip(function.parameters, answer.parameters)
+    }
+    return {
+        "prompt": answer.prompt,
+        "name": answer.name,
+        "parameters": parameters,
+    }
+
+
+def main() -> None:
+    """Run the full pipeline and write the results to the output file."""
+    args = parse_args(sys.argv[1:])
+
     try:
-        logits = model.get_logits_from_input_ids(generated)
+        model = Small_LLM_Model()
 
-        next_token = max(range(len(logits)), key=lambda i: logits[i])
-        if next_token == 151645:
-            raise KeyboardInterrupt
-        generated.append(next_token)
-        response = tokenizer.decode(next_token)
-        print(response, end="", flush=True)
-    except KeyboardInterrupt:
+        tokenizer_file = Path(model.get_path_to_tokenizer_file())
+        tokenizer = SelectableTokenizer(Tokenizer(tokenizer_file), model, True)
+
+        decoder = ConstrainedDecoder(
+            tokenizer,
+            args.functions_definition,
+        )
+
+        functions = JsonParser.parse_functions(args.functions_definition)
+        functions_by_name = {f.name: f for f in functions}
+
+        prompt_builder = PromptBuilder(functions)
+        prompts = JsonParser.parse_prompts(args.input)
+    except Exception as e:
+        print(f"Error: initialization failed: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    results: List[Dict[str, object]] = []
+    for i, prompt_obj in enumerate(prompts, start=1):
+        print(f"\n[{i}/{len(prompts)}] {prompt_obj.prompt}")
         try:
-            print()
-            print()
-            prompt = input("prompt: ")
-            input_ids = model.encode(prompt) # for quick testing only, use tokenizer.encode(prompt_text) after
-            generated = input_ids[0].tolist()
-        except KeyboardInterrupt:
-            exit()
+            answer = decoder.decode(
+                prompt_builder,
+                prompt_obj,
+                model.get_logits_from_input_ids,
+            )
+        except Exception as e:
+            print(
+                f"Error: generation failed for '{prompt_obj.prompt}': " f"{e}",
+                file=sys.stderr,
+            )
+            continue
+        print()
+        results.append(build_answer_json(answer, functions_by_name))
+
+    try:
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=2)
+            f.write("\n")
+    except OSError as exc:
+        print(f"Error: could not write output file: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"\nSuccessfully wrote {len(results)} result(s) to " f"{args.output}")
+
+
+if __name__ == "__main__":
+    main()
