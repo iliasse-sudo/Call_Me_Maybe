@@ -1,8 +1,9 @@
 CACHE = */__pycache__ */.mypy_cache */*.egg-info __pycache__ .mypy_cache *.egg-info
 SRC= src
-VENV_PATH := /goinfre/ibaya/uv_venv
-UV_CACHE_DIR :=/goinfre/ibaya/uv_cache
-HF_HOME :=/goinfre/ibaya/HF_cache
+STORAGE := .
+VENV_PATH := $(STORAGE)/uv_venv
+UV_CACHE_DIR := $(STORAGE)/uv_cache
+HF_HOME := $(STORAGE)/HF_cache
 
 export UV_CACHE_DIR
 export HF_HOME
